@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="UamsResourceMapper">
+	<resultMap id="ResourceBaseResultMap" type="com.bgi.uams.beans.Resource">
+		<id column="menu_id" property="resourceId" jdbcType="VARCHAR" />
+		<result column="menu_name" property="resourceName" jdbcType="VARCHAR" />
+		<result column="menu_url" property="resourceUrl" jdbcType="VARCHAR" />
+		<result column="menu_ico" property="resourceIco" jdbcType="VARCHAR" />
+		<result column="menu_index" property="resourceIndex" jdbcType="VARCHAR" />
+		<result column="parent_menu_id" property="resourceParentId" jdbcType="VARCHAR" />
+		<result column="menu_ids" property="resourceParents" jdbcType="VARCHAR" />
+		<result column="last_modified_user" property="lastModifiedUser" jdbcType="VARCHAR" />
+		<result column="last_modified_time" property="lastModifiedTime" jdbcType="VARCHAR" />
+		<result column="system_code" property="systemCode" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<sql id="pageStart">
+		<if test="startIndex != null" >
+		<![CDATA[   select * from (select row_.*, rownum rownum_ from (    ]]>  
+		</if>
+	</sql>  
+	<sql id="pageEnd">
+		<if test="startIndex != null" >
+		<![CDATA[   )row_ where rownum<=#endIndex# ) where rownum_>=#startIndex#  ]]>
+		</if>  
+	</sql>  
+	<!--菜单过滤条件-->
+	<sql id="uamsResourcesFilter">
+		<where>
+			<if test="resourceId != null" >
+			    and menu_id = #{resourceId}
+			</if>
+			<if test="resourceName != null" >
+			    and menu_name = #{resourceName}
+			</if>
+			<if test="resourceParentId != null" >
+			    and parent_menu_id = #{resourceParentId}
+			</if>
+			<if test="systemCode != null" >
+			    and system_code = #{systemCode}
+			</if>
+	 </where>
+	</sql>  
+	<!--根据ID修改菜单-->
+	<update id="updateUamsResourceByResourceId" parameterType="UamsResource">
+		update SYS_MENU 
+		<set>
+			<if test="resourceName != null">menu_name=#{resourceName},</if>
+			<if test="resourceUrl != null">menu_url=#{resourceUrl},</if>
+			<if test="resourceIco != null">menu_ico=#{resourceIco},</if>
+			<if test="resourceIndex != null">menu_index=#{resourceIndex},</if>
+			<if test="resourceParentId != null">parent_menu_id=#{resourceParentId},</if>
+			<if test="resourceParents != null">menu_ids=#{resourceParents},</if>
+			<if test="systemCode != null">system_code=#{systemCode},</if>
+			<if test="lastModifiedUser != null">last_modified_user=#{lastModifiedUser},</if>
+			<if test="lastModifiedTime != null">last_modified_time=#{lastModifiedTime},</if>	
+		</set>
+		where menu_id=#{resourceId}
+	</update>
+	<!--根据ID删除菜单-->
+	<delete id="deleteUamsResourceByResourceId" parameterType="string">
+		delete from SYS_MENU where menu_id=#{ResourceId}
+	</delete>
+	<!--获取菜单总数（用以查询菜单是否存在）-->
+	<select id="getUamsResourcesCount" resultType="java.lang.Integer" parameterType="UamsResource" >  
+		select   count(1) from SYS_MENU
+		<include refid="uamsResourcesFilter"/>
+	</select> 
+	<!--获取菜单-->
+	<select id="getUamsResources" parameterType="UamsResource" resultMap="ResourceBaseResultMap">
+		<include refid="pageStart"/>
+		select   menu_id,menu_name,menu_url,menu_ico,menu_index,parent_menu_id,menu_ids,system_code,last_modified_user,last_modified_time 
+		from SYS_MENU
+		<include refid="uamsResourcesFilter"/>
+		<include refid="pageEnd"/>
+	</select>
+	<!--新增菜单-->
+	<insert id="createUamsResource" parameterType="UamsResource" >
+   		INSERT INTO SYS_MENU
+			<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="resourceName != null">menu_name,</if>
+			<if test="resourceUrl != null">menu_url,</if>
+			<if test="resourceIco != null">menu_ico,</if>
+			<if test="resourceIndex != null">menu_index,</if>
+			<if test="resourceParentId != null">parent_menu_id,</if>
+			<if test="resourceParents != null">menu_ids,</if>
+			<if test="systemCode != null">system_code,</if>
+			<if test="lastModifiedUser != null">last_modified_user,</if>
+			<if test="lastModifiedTime != null">last_modified_time,</if>
+			<if test="resourceId != null">menu_id,</if>	
+			</trim>
+			<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="resourceName != null">#{resourceName},</if>
+			<if test="resourceUrl != null">#{resourceUrl},</if>
+			<if test="resourceIco != null">#{resourceIco},</if>
+			<if test="resourceIndex != null">#{resourceIndex},</if>
+			<if test="resourceParentId != null">#{resourceParentId},</if>
+			<if test="resourceParents != null">#{resourceParents},</if>
+			<if test="systemCode != null">#{systemCode},</if>
+			<if test="lastModifiedUser != null">#{lastModifiedUser},</if>
+			<if test="lastModifiedTime != null">#{lastModifiedTime},</if>
+			<if test="resourceId != null">#{resourceId},</if>	
+			</trim>
+   	</insert>
+		
+</mapper>

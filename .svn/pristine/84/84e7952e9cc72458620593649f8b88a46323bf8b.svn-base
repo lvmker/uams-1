@@ -1,0 +1,161 @@
+package com.bgi.uams.services;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.annotations.Param;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.bgi.uams.beans.UamsException;
+import com.bgi.uams.beans.UamsMethod;
+import com.bgi.uams.beans.UamsResponse;
+import com.bgi.uams.beans.User;
+import com.bgi.uams.dao.UamsUserDao;
+import com.bgi.uams.utils.MD5;
+import com.bgi.uams.utils.UamsUtils;
+
+@Service
+public class UserService {
+    @Autowired
+    private UamsUserDao uamsUserDao;
+    
+	/**
+	 * 根据ID更新用户信息
+	 * @param uamsUser
+	 * @throws UamsException
+	 */
+	public void updateUamsUserByUserId(User uamsUser) throws UamsException{
+	    try {
+		uamsUserDao.updateUamsUserByUserId(uamsUser);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "更新用户信息出现异常");
+	    }
+	    
+	}
+	/**
+	 * 根据ID删除用户信息
+	 * @param userId
+	 * @throws UamsException
+	 */
+	public void deleteUamsUserByUserId(String userId) throws UamsException{
+	    try {
+		uamsUserDao.deleteUamsUserByUserId(userId);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "删除用户信息出现异常");
+	    }
+	}
+	@UamsMethod(value="getUamsUserAuthority")
+	public UamsResponse getUamsUserAuthority(HttpServletRequest request) throws UamsException{
+	    UamsResponse uamsResponse=new UamsResponse();
+	    try {
+		String userName=request.getParameter("userName");
+		String passWord=request.getParameter("passWord");
+		if(StringUtils.isEmpty(userName)||StringUtils.isEmpty(passWord)){
+		    throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "用户名或密码不能为空");
+		}
+		User uamsUser=new User();
+//		if(UamsUtils.checkEmail(userName)){
+		    uamsUser.setUserEmail(userName);
+//		}else {
+//		    uamsUser.setUserName(userName);
+//		}
+		uamsUser.setUserMd5Pwd(MD5.getMD5(passWord));
+		List<User> users=uamsUserDao.getDetailUamsUsers(uamsUser);
+		if(null==users||users.size()<1){
+		    throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "用户名或者密码错误");
+		}
+		uamsResponse.setData(users);
+	    } catch (UamsException e) {
+		throw e;
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "获取用户授权信息出现异常");
+	    }
+	    return uamsResponse;
+	}
+	
+	
+	/**
+	 * 获取用户信息列表
+	 * @param uamsUser
+	 * @return
+	 * @throws UamsException
+	 */
+	public List<User> getUamsUsers(User uamsUser) throws UamsException{
+	    try {
+		return uamsUserDao.getUamsUsers(uamsUser);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "获取用户信息出现异常");
+	    }
+	    
+	}
+	/**
+	 * 统计用户信息总数出现异常
+	 * @param uamsUser
+	 * @return
+	 * @throws UamsException
+	 */
+	public Integer getUamsUsersCount(User uamsUser) throws UamsException{
+	    try {
+		return uamsUserDao.getUamsUsersCount(uamsUser);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "统计用户信息总数出现异常");
+	    }
+	}
+	/**
+	 * 新增用户信息出现异常
+	 * @param uamsUser
+	 * @throws UamsException
+	 */
+	public void createUamsUser(User uamsUser) throws UamsException{
+	    try {
+		uamsUserDao.createUamsUser(uamsUser);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "新增用户信息出现异常");
+	    }  
+	}
+	
+	/**
+	 * 保存用户和角色授权信息
+	 * @param uamsUser
+	 * @throws UamsException
+	 */
+	public void saveUserAndRole(@Param("userId") Long userId, @Param("roleId") Long roleId) throws UamsException{
+	    try {
+	    uamsUserDao.saveUamsUserAndRole(userId,roleId);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "保存用户和角色授权信息出现异常");
+	    }  
+	}
+	/**
+	 * 保存用户和数据授权信息
+	 * @param UamsResource
+	 * @throws UamsException
+	 */
+	public void saveUamsUserAndData(@Param("userId") Long userId, @Param("dataId") Long dataId) throws UamsException{
+	    try {
+	    	uamsUserDao.saveUamsUserAndData(userId,dataId);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "保存用户和数据授权信息出现异常");
+	    }  
+	}
+    
+}

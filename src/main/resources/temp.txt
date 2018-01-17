@@ -1,0 +1,7 @@
+    private String dataId;//data_id   CHAR(32) not null,
+    private String dataType;//data_type  VARCHAR2(32) not null,
+    private String field;//field VARCHAR(32),
+    private String sign;//sign VARCHAR(32),
+    private String option;//option VARCHAR(32),
+    private String low;//low VARCHAR(32),
+    private String high;//high VARCHAR(32)

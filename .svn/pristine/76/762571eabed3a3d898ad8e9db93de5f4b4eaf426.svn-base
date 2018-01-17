@@ -1,0 +1,265 @@
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<%@ include file="resources/common/page/sessionovertime.jsp"%>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>用户管理</title>
+	<meta http-equiv="pragma" content="no-cache">
+	<meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="expires" content="0">
+    <script type="text/javascript" src="user.js"></script>
+    <script type="text/javascript" src="resources/easyui/datagrid-cellediting.js"></script>
+    <style type="text/css">
+    .userTd{width: 109px;font-size: 13px;height: 30px;border-right: 1px dotted #CCCCCC;border-bottom:1px dotted #CCCCCC}
+    .userTds{font-size: 14px;height: 30px;border-bottom:1px dotted #CCCCCC;font-weight: bold; }
+    </style>
+  </head>
+  <body class="easyui-layout" style="width: 100%; height: 100%;">
+  	<div data-options="region:'center',title:'用户列表'">
+   		<div id="toolbar" style="height:auto;">
+  		<table style="line-height:50px;">
+		  	<tr align="left" >
+		  		<td width="80" align="right">用户名/姓名:</td>
+		  		<td>
+		  			<input class="easyui-textbox" value="" id="realName" data-options="prompt:'模糊查询'" style="width: 150px"/>
+		  		</td>
+		  		<td width="80" align="right">系统名称:</td>
+		  		<td width="80" align="left">		          		
+			  		<input class="easyui-combobox" id="search_systemCode2" size="20" editable="false" data-options="
+			          			panelHeight:'250',
+			          			valueField:'systemCode',
+			          			textField:'systemName',
+			          			url:'sys/findSysSystemCombo.action',
+			          			loadFilter:function(data){
+			          				return data.rows;
+			          			},
+			          			prompt:'精确查询'"
+			          		/>
+		        </td>
+		        <td width="100" align="right">角色：</td>
+          		<td>
+		  			<input class="easyui-textbox" value="" id="roleName" data-options="prompt:'模糊查询'" style="width: 150px"/>
+		  		</td>
+ 		        <td width="100" align="right">用户类型：</td>
+          		<td width="100" align="left" colspan="3">
+          			<select class="easyui-combobox" style="width:135px;" editable="false" id="searchUserType" data-options="panelHeight:'auto'">
+          				<option value="" selected ="selected" >------</option>
+          				<option value="0">UAMS管理员</option>
+	        			<option value="1">华大员工</option>
+	        			<option value="2">外包同事</option>
+	        			<option value="3">外部用户</option>
+	        		</select>
+          		</td>
+		  	</tr>
+		  	<!-- <tr height="30">
+          		
+        	</tr> -->
+
+		</table>
+		<div style="margin-left:-2px;margin-right:-2px;" class="toolbuttonbg">
+	        <a href="javaScript:openDialog_addPortal();" name="out_user_add" style="float:left;" class="easyui-linkbutton" iconCls="icon-add" >外部人员添加</a>
+	        <div class="datagrid-btn-separator"></div>
+	        <a href="javaScript:;" name="out_user_editor" style="float:left;" class="easyui-linkbutton" id="editOutUser" iconCls="icon-edit" onclick="openDialog_editPortal()">外部人员编辑</a>
+	       	<div class="datagrid-btn-separator"></div>
+	        <a href="javaScript:;" name="user_updatepaw" style="float:left;" class="easyui-linkbutton" id="updatePasswordBtn" iconCls="icon-lock" onclick="openUpdatePawDiglog()">密码重置</a>
+	       	<div class="datagrid-btn-separator"></div>
+	        <a href="javaScript:delPortal();" name="user_delete" style="float:left;" class="easyui-linkbutton" iconCls="icon-cancel">删除</a>
+	       	<div class="datagrid-btn-separator"></div>
+	        <a href="javaScript:;" name="user_enable" style="float:left;" class="easyui-linkbutton" id="enableBtn" iconCls="icon-ok" onclick="enable()">启用</a>
+	        <div class="datagrid-btn-separator"></div>
+	        <a href="javaScript:;" name="user_disable" style="float:left;" class="easyui-linkbutton" id="disableBtn" iconCls="icon-no" onclick="enable()">禁用</a>
+	        <div class="datagrid-btn-separator"></div>
+	        <a href="javaScript:reloads();" name="user_refresh" style="float:left;" class="easyui-linkbutton" iconCls="icon-reload" >刷新</a>
+	        <div class="datagrid-btn-separator"></div>
+	        <a href="javascript:queryUser();" name="user_query" class="easyui-linkbutton" iconCls="icon-search">查询</a>
+	    </div>
+	</div>  
+    <!-- 表格 -->
+    <table id="dataGridTable"  fit="true"  pagination="true" rownumbers="true" toolbar="#toolbar" singleSelect="true" fitColumns="false" striped="true" url="sys/findUser.action" data-options="onSelect:doEvent,onClickRow:userFrameMod">
+    </table> 
+   	</div>
+   	<div  data-options="region:'east',title:'用户详细信息',collapsible:false,split:true,minWidth:350" style="width:350px;">
+ 		<div  class="toolbuttonbg" >
+	        <a href="javaScript:;" style="float:left;" class="easyui-linkbutton" iconCls="icon-man" plain="true" onclick="userInfos()">基本</a>
+	        <div class="datagrid-btn-separator"></div>
+	        <a href="javaScript:;" style="float:left;" class="easyui-linkbutton" iconCls="icon-lock" plain="true" onclick="userRoleNames()">角色</a>
+	       	<div class="datagrid-btn-separator"></div>
+	        <a href="javaScript:;" class="easyui-linkbutton" iconCls="icon-more" plain="true" onclick="userMore()">其他</a>
+	    </div>
+ 		<table width="100%" id="userInfos">
+ 		 	<tr>
+ 			<tr>
+ 				<td class="userTd">用户名</td>
+ 				<td class="userTds" id="u_userName">&nbsp;</td>
+ 			</tr>
+ 			<tr>
+ 				<td class="userTd">真实姓名</td>
+ 				<td class="userTds" id="u_realName">&nbsp;</td>
+ 			</tr>
+ 			<tr>
+ 				<td class="userTd">性别</td>
+ 				<td class="userTds" id="u_userGender">&nbsp;</td>
+ 			</tr>
+ 			<tr>
+	 			<td class="userTd">电子邮箱</td>
+	 			<td class="userTds" id="u_userEmail">&nbsp;</td>
+ 			</tr>
+ 			<tr>
+	 			<td class="userTd">手机号码</td>
+	 			<td class="userTds" id="u_phoneNum">&nbsp;</td>
+ 			</tr>
+ 			<tr>
+	 			<td class="userTd">QQ</td>
+	 			<td class="userTds" id="u_qqNum">&nbsp;</td>
+ 			</tr>
+ 			<tr>
+	 			<td class="userTd">联系地址</td>
+	 			<td class="userTds" id="u_userAddress">&nbsp;</td>
+ 			</tr>
+ 			<tr>
+	 			<td class="userTd">用户类型</td>
+	 			<td class="userTds" id="u_userType">&nbsp;</td>
+ 			</tr>
+ 		</table>
+ 		<table width="100%" id="userRoleNames">
+ 			<tr>
+ 				<td class="userTd" >角色</td>
+ 				
+ 				<td class="userTds" id="u_roles">&nbsp;</td>
+ 			</tr>
+ 		</table>
+ 		<table width="100%" id="userMore">
+ 			<tr>
+	 			<td class="userTd">记录最后修改者</td>
+	 			<td class="userTds" id="u_lastModifiedUser">&nbsp;</td>
+ 			</tr>
+ 			<tr>
+	 			<td class="userTd">记录最后修改时间</td>
+	 			<td class="userTds" id="u_lastModifiedTime">&nbsp;</td>
+ 			</tr>
+ 		</table>
+ 	</div>
+
+  	
+	<!-- ++++++++++++++++++++++++++++ -->
+	 <!-- 外部人员添加/编辑面板-->
+	<div id="outerPersonInfoDialog" iconCls="icon-save" style="padding: 5px; width: 700px; height: 360px;">
+		<div class="easyui-layout" fit="true">
+		  	<div region="center" border="false" >
+		  	<input type="hidden" id="accountCount_out" name="accountCount"/>
+		  	<input type="hidden" id="userIdInfo_out">
+		    <table>
+	    		<tr height="30">
+	    			<td width="100" align="right">工号：</td>
+	          		<td width="100" align="left"><input type="text" class="easyui-textbox" id="workNumberInfo_out" style="padding: 0px; width: 200px;" disabled="true"></input></td>
+	          		<td width="87" align="right">用户名：</td>
+	          		<td width="100" align="left"><input type="text" class="easyui-textbox" id="userNameInfo_out" data-options="required:true,missingMessage:'该输入项为必输项'" style="padding: 0px; width: 200px;"></input></td>
+	        	</tr>
+	    		<tr height="30">
+	    			<td width="100" align="right">真实姓名：</td>
+	          		<td width="100" align="left"><input type="text" class="easyui-textbox" id="realNameInfo_out" data-options="required:true,missingMessage:'该输入项为必输项'" style="padding: 0px; width: 200px;"></input></td>
+	          		<td width="87" align="right">性别：</td>
+	        		<td width="100" align="left">
+	        		<select class="easyui-combobox" style="width:200px;" editable="false" id="userGenderInfo_out" data-options="panelHeight:'auto'">
+	        		<option value="0">未知</option>
+	        		<option value="1">女</option>
+	        		<option value="2">男</option>
+	        		</select>
+	        		</td>
+				</tr>
+	        	<tr height="30">
+	          		<td width="100" align="right">手机号码：</td>
+	          		<td width="100" align="left"><input type="text" class="easyui-textbox" id="phoneNumInfo_out" data-options="required:true,missingMessage:'该输入项为必输项'"  style="padding: 0px; width: 200px;"></input></td>
+				</tr>
+	        	<tr height="30">
+	        		<td width="100" align="right">电子邮箱：</td>
+	          		<td width="200" align="left"><input type="text" class="easyui-textbox" id="userEmailInfo_out"  data-options="required:true,validType:'email',missingMessage:'该输入项为必输项'" style="padding: 0px; width: 200px;" ></input></td>
+					<td width="87" align="right">QQ：</td>
+	          		<td width="200" align="left"><input type="text" class="easyui-textbox" id="qqNumInfo_out" style="padding: 0px; width: 200px;"></input></td>
+	        	</tr>
+	        	<tr height="30">
+	          		<td width="87" align="right">联系地址：</td>
+	          		<td width="100" align="left"><input type="text" class="easyui-textbox" id="userAddressInfo_out" style="padding: 0px; width: 200px;"></input></td>
+	        	</tr>
+	        	<!-- 华大员工 -->
+	        	<tr height="30">
+	        	    <td width="87" align="right">用户类型：</td>
+	        		<td width="100" align="left">
+	        		<select class="easyui-combobox" style="width:200px;" editable="false" id="userType_out" 
+	        		data-options="panelHeight:'auto',
+	        		onSelect:function(){
+					var val = $('#userType_out').combobox('getValue');
+					var val2 = $('#userIdInfo_out').val();
+					var outTr = $('#isOutUserTr');
+					if(val == '1'){
+						outTr.hide();
+					}else if(val =='2' && !val2){
+						outTr.show();
+					}else{
+						outTr.hide();
+					}}">
+		        		<option value="1" selected ="selected" >外包同事</option>
+		        		<option value="2" >外部用户</option>
+	        		</select>
+	        		</td>
+	        		<td width="87" align="right">员工状态：</td>
+	        		<td width="100" align="left">
+	        		<select class="easyui-combobox" style="width:200px;" editable="false" id="userState_out" data-options="panelHeight:'auto'">
+	        		<option value="1" >在职</option>
+	        		<option value="0" >离职</option>
+	        		</select>
+	        		</td>
+	          	</tr>
+	          	<!-- 外部账号 -->
+	          	<tr id="isOutUserTr" style="display: none;" height="30">
+	        	    <td width="87" align="right">密码：</td>
+	        		<td width="100" align="left"><input id="OutUserPassword_out" class="easyui-textbox" type="password" data-options="required:true,missingMessage:'该输入项为必输项',validType:'password',iconCls:'icon-lock',iconWidth:38" style="padding: 0px; width: 200px;" /></td>
+	        		<td width="87" align="right">确认密码：</td>
+	        		<td width="100" align="left"><input id="OutUserPasswordQR_out" class="easyui-textbox" type="password" data-options="required:true,missingMessage:'该输入项为必输项',validType:'password',iconCls:'icon-lock',iconWidth:38" style="padding: 0px; width: 200px;" /></td>
+	          	</tr>
+	        	<tr height="30">
+	          		<td width="100" align="right">角色：</td>
+	          		<td width="100" align="left" colspan="3">
+	          		<div class="datagrid-toolbar" id="role_comboGrid_tools_out" style="width:100%;height:30px;">
+          				<table>
+	          				<tr>
+	          				<td>系统名称：</td>
+	          				<td>
+	          				<input class="easyui-combobox" id="search_systemCode_out" size="20" editable="false" data-options="
+			          			panelHeight:'200',
+			          			valueField:'systemCode',
+			          			textField:'systemName',
+			          			url:'sys/findSysSystemCombo.action',
+			          			loadFilter:function(data){
+			          				return data.rows;
+			          			},
+			          			prompt:'精确查询'"
+			          		/>
+	          				</td>
+	          				<td>角色名称：</td>
+	          				<td>
+	          				<input class="easyui-textbox" value="" id="rolesName_out" name="rolesName" data-options="prompt:'模糊查询'"/>
+	          				</td>
+	          				<td>
+	          				<a href="javaScript:refleshSysRole2();"style="float:left" name="sysRole_reflesh" class="easyui-linkbutton" iconCls="icon-reload" plain="true">刷新</a>
+	          				<div class="datagrid-btn-separator" style="float:left"></div>
+		       				<a href="javaScript:querySysRole2();" style="float:left" name="sysRole_query" class="easyui-linkbutton" iconCls="icon-search" plain="true">搜索</a>
+		          			<div class="datagrid-btn-separator" style="float:left"></div>
+	          				</td>
+	          				</tr>
+          				</table>
+	          		</div>
+	          			<select id="roleIds_out" class="easyui-combogrid" style="width:490px;"></select>
+				     	<input id="userRolesIds_out" type="hidden" value="0"/>
+	          		</td>
+	        	</tr>
+	  		</table>
+		    </div>
+	 	</div>
+	 </div>
+	
+	<!-- ------ 结束 ------------- -->
+	
+  </body>
+</html>
+<%@ include file="../../resources/common/page/button.jsp"%>

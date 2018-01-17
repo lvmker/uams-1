@@ -1,0 +1,1626 @@
+$(document).ready(function(){
+	setDialog();
+	closeDialog();
+	setSynUserDialog();
+	closeSynUserDialog();
+	setUpdatePaswordDialog();
+	closeUpdatePaswordDialog();
+	$("#userRoleNames").hide();
+	$("#userMore").hide();
+	//初始化表格
+	$('#dataGridTable').datagrid({
+		columns:[[ 
+		   {field:'workNumber',title:'工号',width:90,align:'center'},
+           {field:'userName',title:'用户名',width:120,align:'center'}, 
+           {field:'realName',title:'真实姓名',width:80,align:'center'},
+           {field:'accountCount',title:'账号状态',width:70,align:'center',formatter:updateStates},
+           {field:'userState',title:'员工状态',width:70,align:'center',formatter:formatUserState},
+//           {field:'isOutsourcing',title:'华大员工',width:70,align:'center',formatter:formatIsOutsourcing},
+//           {field:'isOutUser',title:'外部员工',width:70,align:'center',formatter:formatIsOutUser},
+           {field:'userType',title:'用户类型',width:70,align:'center',formatter:formatUserType},
+           {field:'mobileNum',title:'手机号码',width:100,align:'center'},
+           {field:'userEmail',title:'电子邮箱',width:170,align:'center'},
+           {field:'dataName',title:'法人单位',width:170,align:'center'},//做更改
+           {field:'userCount',title:'登录次数',width:70,align:'center'},
+           {field:'createUser',title:'记录建立者',width:createUserWidth,align:'center'},
+           {field:'createTime',title:'记录建立时间',width:createTimeWidth,align:'center'}
+         ]]
+ 	});
+
+	$('#realName').textbox('textbox').keydown(function (e) {
+		if (e.keyCode == 13) {
+			$('#realName').textbox('setValue', $(this).val());
+			resetDialogTo();
+			userInfos();
+			queryUser();
+		}
+	});
+	$('#workNumber').textbox('textbox').keydown(function (e) {
+		if (e.keyCode == 13) {
+			$('#workNumber').textbox('setValue', $(this).val());
+			resetDialogTo();
+			userInfos();
+			queryUser();
+			
+		}
+	});
+	
+	var datagridLast = $('#dataIdCombogrid').combogrid('grid');
+	datagridLast.datagrid({
+		url:'sys/queryAllData.action',
+		queryParams:{
+			'user.dataName' : ''
+		}
+	});
+	
+	$('#searchRoleIds').combogrid({    
+	    panelWidth:560,
+	    panelHeight:500,
+	    rownumbers:true,
+	    pagination:true,
+	    fitColumns:true,
+	    pageSize:200,
+  		editable:false,
+  		toolbar:'#role_search_comboGrid_tools',
+  		url:'sys/findRole.action',
+	    idField:'rolesId',    
+	    textField:'rolesName',    
+	    columns:[[    
+            	{field:'rolesId',title:'角色名称',width:150,hidden:'true',align:'center'},  
+            	{field:'systemName',title:'系统名称',width:150,align:'center'}, 
+                {field:'rolesName',title:'角色名称',width:150,align:'center'},
+                {field:'createUser',title:'记录建立者',width:createUserWidth,align:'center'},
+                {field:'createTime',title:'记录建立时间',width:createTimeWidth,align:'center'}   
+                ]]
+		});
+});
+
+//弹出修改密码窗口
+function openUpdatePawDiglog(){
+    if($('#dataGridTable').datagrid('getSelected')){
+		$("#paswUpdateDiv").dialog({
+			title:"密码重置",
+			modal: true,         	//模式窗口：窗口背景不可操作
+			collapsible : false,  	//可折叠，点击窗口右上角折叠图标将内容折叠起来
+			resizable : false,    	//可拖动边框大小
+			closed:true,
+			onClose: function () { 
+			  $('#paswUpdateForm').form('clear');
+			},
+			buttons: [{
+	            text: '确定',
+	            iconCls: 'icon-ok',
+	            handler: updateUserPsw
+	        }, {
+	            text: '取消',
+	            iconCls: 'icon-cancel',
+	            handler: function () {
+	                $('#paswUpdateDiv').dialog('close');                   
+	            }
+	        }]
+		}); 	
+		
+		var selectedRow = $('#dataGridTable').datagrid('getSelections');
+		$("#paswUpdateId").val(selectedRow[0].userId);
+		$("#paswUpdateName").textbox('setValue',selectedRow[0].userName);
+		$("#paswUpdateRealName").textbox('setValue',selectedRow[0].realName);
+		$("#paswNewPassword").textbox('setValue','');
+		$("#paswfirmPassword").textbox('setValue','');
+		$("#paswUpdateDiv").dialog('open');
+    }else{
+    	noSelectData();
+    }
+}
+//修改密码的保存按钮
+function updateUserPsw() {
+    $('#paswUpdateForm').form('submit',{
+		url:'sys/updateOutUserPsw.action',
+		onSubmit:function(){
+			//判断密码是否确认正确
+			var flag = true;
+			var pass = $("#paswNewPassword").textbox('getValue');
+			var passCif = $("#paswfirmPassword").textbox('getValue');
+			if(passCif != pass){
+				flag = false;
+				$.messager.alert('提示', '两次输入密码不一样！', 'info');
+			}
+			return $(this).form('validate')&&flag;
+		},
+		success:function(data){
+			if($.parseJSON(data).success){
+				$('#paswUpdateDiv').dialog('close');
+			    $.messager.alert('提示', '修改密码成功', 'info');
+			    $("#dataGridTable").datagrid('reload');
+			}else {
+				 $.messager.alert('提示', $.parseJSON(data).msg, 'info');
+			}
+		}
+	});
+}
+function saveOutUser(){
+	var userIdInfo=$("#userIdInfo_out").val();
+	var userNameInfo=$("#userNameInfo_out").val();
+	var realNameInfo=$("#realNameInfo_out").val();
+	var userGenderInfo=$("#userGenderInfo_out").combobox('getValue');
+	var birthDayInfo=$("#birthDayInfo_out").datebox('getValue');
+	var mobileNumInfo=$("#mobileNumInfo_out").val();
+	var phoneNumInfo=$("#phoneNumInfo_out").val();
+	var userEmailInfo=$("#userEmailInfo_out").val();
+	var qqNumInfo=$("#qqNumInfo_out").val();
+	var userState=$("#userState_out").combobox('getValue');
+	var workNumberInfo=$("#workNumberInfo_out").val();
+	var userAddressInfo=$("#userAddressInfo_out").val();
+	var userType=$("#userType_out").combobox("getValue");
+	var outUserPassword = $("#OutUserPassword_out").val();
+	var outUserPasswordQR = $("#OutUserPasswordQR_out").val();
+	
+	var accountCount = $("#accountCount_out").val();
+	var gridRole = $('#roleIds_out').combogrid('grid');
+	var checkedProDatas = gridRole.datagrid('getChecked');
+	var checkedProDataStr = "";
+	for(var i = 0; i <  checkedProDatas.length ; i++){
+		if(i==0){
+			checkedProDataStr += checkedProDatas[i].rolesId;
+		} else {
+			checkedProDataStr += "#"+checkedProDatas[i].rolesId;
+		}
+	}	
+	if(userNameInfo==null||userNameInfo==''){
+		sysMsgShow("用户名不允许为空!");
+		return false;
+	
+	}else if(realNameInfo==null||realNameInfo==''){
+		sysMsgShow("真实姓名不允许为空!");
+		return false;
+	}else if(userGenderInfo==null||userGenderInfo==''){
+		sysMsgShow("性别不允许为空!");
+		return false;
+	
+	}else if(mobileNumInfo==null||mobileNumInfo==''){
+		sysMsgShow("手机号码不允许为空!");
+		return false;
+	
+	}else if(!isMobileNum(mobileNumInfo)){
+		sysMsgShow("手机号码不正确!");
+		return false;
+		
+	}else if(userEmailInfo==null||userEmailInfo==''){
+		sysMsgShow("邮箱不允许为空!");
+		return false;
+	}else if(!isEmail(userEmailInfo)){
+		sysMsgShow("邮箱不正确!");
+		return false;
+	}else if(userType=='2' && (userIdInfo==null||userIdInfo=='') && (outUserPassword==null||outUserPassword==''||outUserPasswordQR==null||outUserPasswordQR=='')){
+		sysMsgShow("外部用户密码必填!");
+		return false;
+	}else if(userType=='2' && (outUserPassword != outUserPasswordQR)){
+		sysMsgShow("外部用户密码不一样！");
+		return false;
+	}else{
+
+		$.ajax({
+			async : false,
+			cache:false,
+			type: 'post',
+			dataType : "json",
+			data : {
+				"user.userId" : userIdInfo,
+				"user.userName" : userNameInfo,
+				"user.realName" : realNameInfo,
+				"user.userGender" : userGenderInfo,
+				"user.birthDay" : birthDayInfo,
+				"user.mobileNum" : mobileNumInfo,
+				"user.phoneNum" : phoneNumInfo,
+				"user.userEmail" : userEmailInfo,
+				"user.qqNum" : qqNumInfo,
+				"user.workNumber" : workNumberInfo,
+				"user.userAddress" : userAddressInfo,
+				"user.manageRole" : checkedProDataStr,
+				"user.accountCount" : accountCount,
+				"user.userType" : userType,
+				"user.userState" : userState,
+				"user.passWord" : outUserPassword,
+			},
+			url: 'sys/saveUser.action',
+			error: function () {
+				sysErrorShow('请求失败!');
+			},success:function(data){
+				var messgage = userIdInfo?"修改成功!":"添加成功!";
+				if(data.success==true){
+					reloadTable();
+					closeDialog();
+					resetDialogTo();
+					userInfos();
+				}else{
+					messgage = data.msg;
+				}
+				sysMsgShow(messgage);
+			}
+		});
+	
+	}	
+
+}
+
+//保存
+function saveUser(){
+	
+	var userIdInfo=$("#userIdInfo").val();
+	var userNameInfo=$("#userNameInfo").val();
+	var realNameInfo=$("#realNameInfo").val();
+	var userGenderInfo=$("#userGenderInfo").combobox('getValue');
+	var birthDayInfo=$("#birthDayInfo").datebox('getValue');
+	var mobileNumInfo=$("#mobileNumInfo").val();
+	var phoneNumInfo=$("#phoneNumInfo").val();
+	var userEmailInfo=$("#userEmailInfo").val();
+	var qqNumInfo=$("#qqNumInfo").val();
+//	var isOutsourcing=$("#isOutsourcing").combobox('getValue');
+	var userState=$("#userState").combobox('getValue');
+	var workNumberInfo=$("#workNumberInfo").val();
+	var userAddressInfo=$("#userAddressInfo").val();
+	var userType=$("#userType").combobox("getValue");
+	//外部用户
+//	var isOutUser = $("#isOutUser").combobox('getValue');
+//	var outUserPassword = $("#OutUserPassword").val();
+//	var outUserPasswordQR = $("#OutUserPasswordQR").val();
+	
+	var dataId = $("#dataIdCombogrid").combogrid('getValue');//做更改
+	for(var i=6;i>=1;i--){
+		if($('#department'+i).combotree('getValue')==null||$('#department'+i).combotree('getValue')==''){
+			continue;
+		}else{
+			var user_departmentId = $('#department'+i).combotree('getValue');
+			var user_departmentName = $('#department'+i).combotree('getText');
+			break;
+		}
+	}
+	var accountCount = $("#accountCount").val();
+	var gridRole = $('#roleIds').combogrid('grid');
+	var checkedProDatas = gridRole.datagrid('getChecked');
+	var checkedProDataStr = "";
+	for(var i = 0; i <  checkedProDatas.length ; i++){
+		if(i==0){
+			checkedProDataStr += checkedProDatas[i].rolesId;
+		} else {
+			checkedProDataStr += "#"+checkedProDatas[i].rolesId;
+		}
+	}	
+	if(userNameInfo==null||userNameInfo==''){
+		sysMsgShow("用户名不允许为空!");
+		return false;
+	
+	}else if(realNameInfo==null||realNameInfo==''){
+		sysMsgShow("真实姓名不允许为空!");
+		return false;
+	}else if(userGenderInfo==null||userGenderInfo==''){
+		sysMsgShow("性别不允许为空!");
+		return false;
+	
+	}else if(mobileNumInfo==null||mobileNumInfo==''){
+		sysMsgShow("手机号码不允许为空!");
+		return false;
+	
+	}else if(!isMobileNum(mobileNumInfo)){
+		sysMsgShow("手机号码不正确!");
+		return false;
+		
+	}else if(userEmailInfo==null||userEmailInfo==''){
+		sysMsgShow("邮箱不允许为空!");
+		return false;
+	}else if(!isEmail(userEmailInfo)){
+		sysMsgShow("邮箱不正确!");
+		return false;
+	}else if(user_departmentId==null||user_departmentId==''){
+		sysMsgShow("组织架构不允许为空!");
+		return false;
+	}
+//	else if(isOutUser==null||isOutUser==''){
+//		sysMsgShow("外部用户必选!");
+//		return false;
+//	}else if(isOutUser=='1' && (userIdInfo==null||userIdInfo=='') && (outUserPassword==null||outUserPassword==''||outUserPasswordQR==null||outUserPasswordQR=='')){
+//		sysMsgShow("外部用户密码必填!");
+//		return false;
+//	}else if(isOutUser=='1' && (outUserPassword != outUserPasswordQR)){
+//		sysMsgShow("外部用户密码不一样！");
+//		return false;
+//	}
+	else{
+
+		$.ajax({
+			async : false,
+			cache:false,
+			type: 'post',
+			dataType : "json",
+			data : {
+				"user.userId" : userIdInfo,
+				"user.userName" : userNameInfo,
+				"user.realName" : realNameInfo,
+				"user.userGender" : userGenderInfo,
+				"user.birthDay" : birthDayInfo,
+				"user.mobileNum" : mobileNumInfo,
+				"user.phoneNum" : phoneNumInfo,
+				"user.userEmail" : userEmailInfo,
+				"user.qqNum" : qqNumInfo,
+				"user.workNumber" : workNumberInfo,
+				"user.userAddress" : userAddressInfo,
+				"user.manageRole" : checkedProDataStr,
+				"user.departmentId" : user_departmentId,
+				"user.departmentName" : user_departmentName,
+				"user.accountCount" : accountCount,
+				"user.userType" : userType,
+				"user.userState" : userState,
+				"user.dataId":dataId//做更改
+			},
+			url: 'sys/saveUser.action',
+			error: function () {
+				sysErrorShow('请求失败!');
+			},success:function(data){
+				var messgage = userIdInfo?"修改成功!":"添加成功!";
+				if(data.success==true){
+					reloadTable();
+					closeDialog();
+					resetDialogTo();
+					userInfos();
+				}else{
+					messgage = data.msg;
+				}
+				sysMsgShow(messgage);
+			}
+		});
+	
+	}	
+}
+
+//同步
+function saveSynUser(){
+	if($("#synUserForm").form('validate')){
+		var userCode=$("#userCode").textbox('getValue');
+		$.ajax({
+			async : false,
+			cache:false,
+			type: 'post',
+			dataType : "json",
+			data : {
+				"user.workNumber" : userCode
+			},
+			url: 'sys/addUserFromBI.action',
+			error: function () {
+				sysErrorShow('同步失败!');
+			},success:function(data){
+				var messgage = data.msg;
+				if(data.success==true){
+					reloadTable();
+					closeSynUserDialog();
+				}else{
+					messgage = data.msg;
+				}
+				sysMsgShow(messgage);
+			}
+		});
+	} else {
+		sysMsgShow("员工号必填");
+		return false;
+	}
+}
+//删除
+function delPortal(){
+	if($('#dataGridTable').datagrid('getSelected')){
+		var ids = [];
+		var cods = [];
+		var selectedRow = $('#dataGridTable').datagrid('getSelections');
+		for(var i=0;i<selectedRow.length;i++){
+			ids.push(selectedRow[i].userId);
+			cods.push(selectedRow[i].userName);
+		}
+		var userId = ids.join(',');
+		$.messager.confirm('删除提示', '你确定删除下列用户吗?<br/><br/>'+cods.join(','), function(r){
+				if (r){
+					var url = 'sys/deleteUser.action?user.userId='+userId;
+					$.ajax({
+						async : false,
+						cache:false,
+						type: 'post',
+						dataType : "json",
+						url:url,
+						error: function () {
+							sysErrorShow('请求失败');
+						},success:function(data){
+							if(data.success==true){
+								sysMsgShow("删除成功!");
+								resetDialogTo();
+								userInfos();
+							}else{
+								sysErrorShow(data.msg);
+							}
+							reloadTable();
+							
+						
+						}
+					});
+				}
+		});
+	}
+	else
+	{
+		noSelectData();
+	}
+}
+
+//查询
+function queryUser(){
+	resetDialogTo();
+	userInfos();
+	$("#dataGridTable").datagrid('reload',{
+		'user.workNumber' : $("#workNumber").val(),
+//	 	'user.userName' : $("#userName").val(),
+	 	'user.realName' : $("#realName").val(),
+	 	'user.sysCode' : $("#search_systemCode2").combobox("getValue"),
+	 	'user.roleId' : $("#searchRoleIds").combogrid("getValue"),
+	 	'user.userType' : $("#searchUserType").combobox("getValue")
+	}); 
+}
+//查询用户角色
+function querySysRole(){
+	var cobo = $("#roleIds");
+	$("#roleIds").combogrid("grid").datagrid("reload", {
+		'role.systemCode' : $("#search_systemCode").combobox("getValue"),
+		'role.rolesName' : $("#rolesName").val(),
+		'rolesIds' : $('#roleIds').combogrid('getValues').join('#')
+	});
+}
+function querySysRole2(){
+	var cobo = $("#roleIds_out");
+	$("#roleIds_out").combogrid("grid").datagrid("reload", {
+		'role.systemCode' : $("#search_systemCode_out").combobox("getValue"),
+		'role.rolesName' : $("#rolesName_out").val(),
+		'rolesIds' : $('#roleIds_out').combogrid('getValues').join('#')
+	});
+}
+function refleshSysRole(rolesIdArray){
+	$("#search_systemCode").combobox("setValue",'');//
+	$("#rolesName").textbox("setValue",'');//
+	$("#roleIds").combogrid("grid").datagrid("reload", {
+		'role.systemCode' : '',
+		'rolesIds' : '',
+		'role.rolesName' : ''
+	});
+}
+function refleshSysRole2(rolesIdArray){
+	$("#search_systemCode_out").combobox("setValue",'');//
+	$("#rolesName_out").textbox("setValue",'');//
+	$("#roleIds_out").combogrid("grid").datagrid("reload", {
+		'role.systemCode' : '',
+		'rolesIds' : '',
+		'role.rolesName' : ''
+	});
+}
+
+//查询用户角色 检索的用户
+function querySearchSysRole(){
+	$("#searchRoleIds").combogrid("grid").datagrid("reload", {
+		'role.systemCode' : $("#role_search_systemCode").combobox("getValue"),
+		'role.rolesName' : $("#search_rolesName").val()
+	});
+}
+function refleshSearchSysRole(rolesIdArray){
+	$("#role_search_systemCode").combobox("setValue",'');//
+	$("#search_rolesName").textbox("setValue",'');//
+	$("#searchRoleIds").combogrid("grid").datagrid("reload", {
+		'role.systemCode' : '',
+		'role.rolesName' : ''
+	});
+}
+
+/**--------------操作弹出框------------------**/
+//初始化模窗
+function setDialog(){
+	$('#portalInfoDialog').dialog({
+		modal: true,
+		collapsible : true,
+		resizable : true,
+		onClose : function(){
+			resetDialog();
+		}
+	});
+	$('#outerPersonInfoDialog').dialog({
+		modal: true,
+		collapsible : true,
+		resizable : true,
+		onClose : function(){
+			resetDialog2();
+		}
+	});
+	//做更改
+	$('#dataIdCombogrid').combogrid({
+		editable:false,
+		//url: 'sys/queryAllData.action',
+		method:'post',
+		pageSize:200,
+		pagination:true,
+		idField:'dataId',  
+		textField:'dataName',
+		toolbar:'#datatoolbar', 
+		fitColumns:false,
+		panelHeight:'270', 
+		columns:[[
+		          {field:'dataId',title:'法人单位ID',width:150,align:'center',hidden:true},
+		          {field:'dataCode',title:'法人单位编号',width:150,align:'center'}, 
+		          {field:'dataName',title:'法人单位名称',width:250,align:'center'}    
+    	]]
+	});
+	$('#department1').combogrid({
+		editable:false,
+		url: 'sys/queryParentDepartment.action',
+		method:'post',
+		panelWidth:'450',
+		pageSize:200,
+		pagination:true,
+		idField:'departmentId',  
+		textField:'departmentName',
+		toolbar:'#takcgridtoolbar1', 
+		fitColumns:true,
+		panelHeight:'200', 
+		columns:[[
+		          {field:'departmentId',title:'项目ID',width:150,align:'center',hidden:true},
+		          {field:'departmentCode',title:'组织编号',width:100,align:'center'},
+		          {field:'departmentName',title:'组织名称',width:250,align:'center'}    
+    	]],
+	    onChange: function(newValue, oldValue){
+	    	departmentonSelect(newValue,'1');
+		}
+	});
+	$('#department2').combogrid({
+		editable:false,
+		method:'post',
+		panelWidth:'450',
+		pagination:true,
+		idField:'departmentId',  
+		textField:'departmentName',
+		toolbar:'#takcgridtoolbar2',
+		fitColumns:true,
+		panelHeight:'200',
+		columns:[[
+		        {field:'departmentId',title:'项目名称',width:150,align:'center',hidden:true},
+		        {field:'departmentCode',title:'组织编号',width:100,align:'center'},
+		        {field:'departmentName',title:'组织名称',width:250,align:'center'}    
+		  	]],
+		onChange: function(newValue, oldValue){
+			departmentonSelect(newValue,'2');
+		}
+	});
+	$('#department3').combogrid({
+		editable:false,
+		method:'post',
+		panelWidth:'450',
+		pagination:true,
+		idField:'departmentId',  
+		textField:'departmentName',
+		toolbar:'#takcgridtoolbar3',
+		fitColumns:true,
+		panelHeight:'200',
+		columns:[[
+		        {field:'departmentId',title:'项目名称',width:150,align:'center',hidden:true},	
+		        {field:'departmentCode',title:'组织编号',width:100,align:'center'},
+		        {field:'departmentName',title:'组织名称',width:250,align:'center'}    
+		  	]],
+		onChange: function(newValue, oldValue){
+			departmentonSelect(newValue,'3');
+		}
+	});
+	$('#department4').combogrid({
+		editable:false,
+		method:'post',
+		panelWidth:'450',
+		pagination:true,
+		idField:'departmentId',  
+		textField:'departmentName',
+		toolbar:'#takcgridtoolbar4',
+		fitColumns:true,
+		panelHeight:'200',
+		columns:[[
+		          {field:'departmentId',title:'项目名称',width:150,align:'center',hidden:true},
+		          {field:'departmentCode',title:'组织编号',width:100,align:'center'},
+			      {field:'departmentName',title:'组织名称',width:250,align:'center'}    
+		  	    ]],
+		onChange: function(newValue, oldValue){
+			departmentonSelect(newValue,'4');
+		}
+	});
+	$('#department5').combogrid({
+		editable:false,
+		method:'post',
+		panelWidth:'450',
+		pagination:true,
+		idField:'departmentId',  
+		textField:'departmentName',
+		toolbar:'#takcgridtoolbar5',
+		fitColumns:true,
+		panelHeight:'200',
+		columns:[[
+		          {field:'departmentId',title:'项目名称',width:150,align:'center',hidden:true},
+		          {field:'departmentCode',title:'组织编号',width:100,align:'center'},
+			      {field:'departmentName',title:'组织名称',width:250,align:'center'}    
+		  	    ]],
+		onChange: function(newValue, oldValue){
+			departmentonSelect(newValue,'5');
+		}
+	});
+	$('#department6').combogrid({
+		editable:false,
+		method:'post',
+		panelWidth:'450',
+		pagination:true,
+		idField:'departmentId',  
+		textField:'departmentName',
+		toolbar:'#takcgridtoolbar6',
+		fitColumns:true,
+		panelHeight:'200',
+		columns:[[
+		          {field:'departmentId',title:'项目名称',width:150,align:'center',hidden:true},
+		          {field:'departmentCode',title:'组织编号',width:100,align:'center'},
+			      {field:'departmentName',title:'组织名称',width:250,align:'center'}    
+		  	    ]],
+		onChange: function(newValue, oldValue){
+		}
+	});
+}
+
+function reflashDatab()
+{
+	$("#dataNameb").textbox('setValue','');
+	queryDatab();
+}
+function reflashtProductType1()
+{
+	$("#ProductType1").textbox('setValue','');
+	queryProductType1();
+}
+
+
+function queryDatab(){
+		var dataName= $("#dataNameb").textbox('getValue').trim();
+		var datagridLast = $('#dataIdCombogrid').combogrid('grid');
+		datagridLast.datagrid({
+			url:'sys/queryAllData.action',
+			queryParams:{
+				'user.dataName' : dataName
+			}
+		});
+	}
+function queryProductType1()
+{
+		var datagridLast = $('#department1').combogrid('grid');
+		datagridLast.datagrid({
+			url:'sys/queryParentDepartment.action',
+			queryParams:{
+				"department.departmentLevel" :'1',
+				'department.departmentName' : $("#ProductType1").textbox('getValue').trim()
+			}
+		});
+	}
+	
+function queryProductType(departmentLevel,selectedId)
+{
+	
+	var datagrid = $('#department'+(departmentLevel-1)).combogrid('grid');
+	var selections = datagrid.datagrid('getSelections');
+	if(selections.length > 0 ){
+		var departmentId = selections[0].departmentId
+		var datagridLast = $('#department'+departmentLevel).combogrid('grid');
+		datagridLast.datagrid({
+			url:'sys/queryParentDepartment.action',
+			queryParams:{
+				"department.departmentLevel" :departmentLevel,
+				"department.parentId" : departmentId,
+				'department.departmentName' : $("#ProductType"+departmentLevel).textbox('getValue').trim()
+			}
+		});
+	}
+	
+}
+function reflashtProductType2()
+{
+	$("#ProductType2").textbox('setValue','');
+	queryProductType(2);
+}
+function reflashtProductType3()
+{
+	$("#ProductType3").textbox('setValue','');
+	queryProductType(3);
+}function reflashtProductType4()
+{
+	$("#ProductType4").textbox('setValue','');
+	queryProductType(4);
+}function reflashtProductType5()
+{
+	$("#ProductType5").textbox('setValue','');
+	queryProductType(5);
+}
+function reflashtProductType6()
+{
+	$("#ProductType6").textbox('setValue','');
+	queryProductType(6);
+}
+function departmentonSelect(departmentId,departmentLevel){
+	if(departmentId){
+		var newLevel = parseInt(departmentLevel)+1;
+		$.ajax({
+			async : false,
+			cache:false,
+			type: 'POST',
+			dataType : "json",
+			data : {
+				"department.parentId" : departmentId,
+				"department.departmentLevel" :newLevel
+			},
+			url: 'sys/queryParentDepartment.action',//请求的action路径
+			error: function () {//请求失败处理函数
+				sysErrorShow('请求失败!');
+			},success:function(data){
+				if(data.success==true){//未返回任何消息表示添加成功
+					var tmp = {"rows":[]};
+			    	//把下级数据清空
+					for(var i=newLevel;i<=6;i++)
+					{
+						$("#department"+i).combogrid('grid').datagrid('loadData',tmp.rows);
+//						$("#department"+i).combogrid('loadData',tmp.rows);
+						$("#department"+i).combogrid('setValue',"");
+					}
+					for(var i=0;i<data.rows.length;i++)
+					{
+						tmp.rows.push({departmentId:data.rows[i].departmentId,departmentName:data.rows[i].departmentName,departmentCode:data.rows[i].departmentCode});
+					}
+			    	$("#department"+newLevel).combogrid('grid').datagrid('loadData',tmp.rows);
+
+				}
+			}
+		});
+		
+	}
+}
+
+//初始化模窗
+function setSynUserDialog(){
+	$('#synUserDialog').dialog({
+		modal: true,
+		collapsible : true,
+		resizable : true,
+		onClose : function(){
+			resetSynDialog();
+		}
+	});
+}
+//关闭模窗
+function closeSynUserDialog(){
+	$('#synUserDialog').dialog('close');
+}
+//清空控件值
+function resetSynDialog(){
+	$("#userCode").textbox('setValue','');
+}
+
+//初始化模窗
+function setUpdatePaswordDialog(){
+	$('#paswUpdateDiv').dialog({
+		modal: true,
+		collapsible : true,
+		resizable : true,
+		onClose : function(){
+			resetSynDialog();
+		}
+	});
+}
+//关闭模窗
+function closeUpdatePaswordDialog(){
+	$('#paswUpdateDiv').dialog('close');
+}
+//清空控件值
+function resetUpdatePaswordDialog(){
+	$("#paswUpdateId").val('');
+	$("#paswUpdateName").textbox('setValue','');
+	$("#paswUpdateRealName").textbox('setValue','');
+	$("#paswNewPassword").textbox('setValue','');
+	$("#paswfirmPassword").textbox('setValue','');
+}
+
+
+//打开添加模窗
+function openDialog_synPortal(){
+	$('#synUserDialog').dialog({
+		closed: false,
+		modal:true,
+        title: "同步用户",
+        buttons: [{
+            text: '确定',
+            iconCls: 'icon-ok',
+            handler: saveSynUser
+        }, {
+            text: '取消',
+            iconCls: 'icon-cancel',
+            handler: function () {
+                $('#synUserDialog').dialog('close');                    
+            }
+        }]
+    });
+}
+
+//打开编辑华大员工模窗
+function editBGI(did,rid){
+	loadUserRoles(did,rid);
+	$("#userNameInfo").textbox({disabled:true});
+	$('#portalInfoDialog').dialog({
+		closed: false,
+		modal:true,
+        title: "编辑用户",
+        buttons: [{
+            text: '确定',
+            iconCls: 'icon-ok',
+            handler: saveUser
+        }, {
+            text: '取消',
+            iconCls: 'icon-cancel',
+            handler: function () {
+                $('#portalInfoDialog').dialog('close');                    
+            }
+        }]
+    });
+}
+//打开添加外部人员
+function openDialog_addPortal(did,rid){
+	loadUserRoles_out(did,rid);
+	//默认选择
+	$('#outerPersonInfoDialog').dialog({
+		closed: false,
+		modal:true,
+        title: "新增用户",
+        buttons: [{
+            text: '确定',
+            iconCls: 'icon-ok',
+            handler: saveOutUser
+        }, {
+            text: '取消',
+            iconCls: 'icon-cancel',
+            handler: function () {
+                $('#outerPersonInfoDialog').dialog('close');                    
+            }
+        }]
+    });
+}
+
+//打开编辑外部人员模窗
+function openDialog_editDialog(did,rid){
+	loadUserRoles_out(did,rid);
+	$('#outerPersonInfoDialog').dialog({
+		closed: false,
+		modal:true,
+        title: "编辑用户",
+        buttons: [{
+            text: '确定',
+            iconCls: 'icon-ok',
+            handler: saveOutUser
+        }, {
+            text: '取消',
+            iconCls: 'icon-cancel',
+            handler: function () {
+                $('#outerPersonInfoDialog').dialog('close');                    
+            }
+        }]
+    });
+}
+function openDialog_editBGIProtal(){
+	if($('#dataGridTable').datagrid('getSelected')){
+		var userId = $('#dataGridTable').datagrid('getSelections')[0].userId;
+		$.getJSON("sys/findUserById.action?user.userId="+userId,null,
+		function msg(json){
+			
+			$("#search_systemCode").combobox('setValue','');
+			$("#rolesName").textbox('setValue','');
+			
+			$("#userIdInfo").val(userId);
+			$("#userNameInfo").textbox('setValue',json.object.userName);
+			$("#realNameInfo").textbox('setValue',json.object.realName);
+			$("#userGenderInfo").combobox('setValue',json.object.userGender);
+			$("#birthDayInfo").datebox('setValue',json.object.birthDay);
+			$("#mobileNumInfo").textbox('setValue',json.object.mobileNum);
+			$("#phoneNumInfo").textbox('setValue',json.object.phoneNum);
+			$("#userEmailInfo").textbox('setValue',json.object.userEmail);
+			$("#qqNumInfo").textbox('setValue',json.object.qqNum);
+			$("#workNumberInfo").textbox('setValue',json.object.workNumber);
+			$("#userAddressInfo").textbox('setValue',json.object.userAddress);
+			$("#accountCount").val(json.object.accountCount);
+			$("#dataIdCombogrid").combogrid('setValue',json.object.dataId);//更改
+			$("#userType").combobox('setValue',json.object.userType);
+//			$("#isOutsourcing").combobox('setValue',json.object.isOutsourcing);//更改
+//			$("#isOutUser").combobox('setValue',json.object.isOutUser);//更改
+			$("#userState").combobox('select',json.object.userState);//更改
+			if($("#userRolesIds").val()==1){
+				refleshSysRole(json.object.manageRoleArray);
+			}
+			editBGI(json.object.departmentId,json.object.manageRoleArray);
+			$("#userState").combobox('disable');
+			$.ajax({
+				async : false,
+				cache:false,
+				type: 'POST',
+				dataType : "json",
+				data : {
+					"department.departmentId" : json.object.departmentId
+				},
+				url: 'sys/queryUserDepartment.action',//请求的action路径
+				error: function () {//请求失败处理函数
+					sysErrorShow('请求失败!');
+				},success:function(data){
+					if(data.success==true){//未返回任何消息表示添加成功
+						for(var i= (data.rows.length - 1);i >= 0;i--)
+						{
+							if(data.rows[i].departmentLevel == "1"){
+								$("#department"+data.rows[i].departmentLevel).combogrid('setValue',data.rows[i].departmentId);
+							}else{
+								var tmp = {"rows":[],"total":"1"};
+								tmp.rows.push({departmentId:data.rows[i].departmentId,departmentName:data.rows[i].departmentName,departmentCode:data.rows[i].departmentCode});
+								$("#department"+data.rows[i].departmentLevel).combogrid('clear');
+								
+//								var item = $("#department"+data.rows[i].departmentLevel).combogrid('grid').datagrid('getRows');  
+//					            if (item) {  
+//					                for (var i = item.length - 1; i >= 0; i--) {  
+//					                    var index =$("#department"+data.rows[i].departmentLevel).combogrid('grid').datagrid('getRowIndex', item[i]) 
+//					                   $("#department"+data.rows[i].departmentLevel).combogrid('grid').datagrid('deleteRow', index);  
+//					                }  
+//					            } 
+					            $("#department"+data.rows[i].departmentLevel).combogrid({data:tmp.rows});
+//								$("#department"+data.rows[i].departmentLevel).combogrid('grid').datagrid('loadData',tmp);
+								$("#department"+data.rows[i].departmentLevel).combogrid('setValue',data.rows[i].departmentId);
+							}
+						}
+
+					}
+				}
+			});
+			
+			$('#portalInfoDialog').dialog('setTitle','编辑用户'); 
+		});
+		var departmentehrId = $('#dataGridTable').datagrid('getSelections')[0].departmentehrId;
+		for(var level=1;level<=6;level++){
+			getUserDepartmentehrByDidAndLevel('departmentehr'+level,departmentehrId,level);
+		}
+	}
+	else
+	{
+		noSelectData();
+	}
+
+}
+//打开编辑模窗
+function openDialog_editPortal(){
+	if($('#dataGridTable').datagrid('getSelected')){
+		var userId = $('#dataGridTable').datagrid('getSelections')[0].userId;
+		$.getJSON("sys/findUserById.action?user.userId="+userId,null,
+		function msg(json){
+			
+			$("#search_systemCode_out").combobox('setValue','');
+			$("#rolesName_out").textbox('setValue','');
+			
+			$("#userIdInfo_out").val(userId);
+			$("#userNameInfo_out").textbox('setValue',json.object.userName);
+			$("#realNameInfo_out").textbox('setValue',json.object.realName);
+			$("#userGenderInfo_out").combobox('setValue',json.object.userGender);
+			$("#birthDayInfo_out").datebox('setValue',json.object.birthDay);
+			$("#mobileNumInfo_out").textbox('setValue',json.object.mobileNum);
+			$("#phoneNumInfo_out").textbox('setValue',json.object.phoneNum);
+			$("#userEmailInfo_out").textbox('setValue',json.object.userEmail);
+			$("#qqNumInfo_out").textbox('setValue',json.object.qqNum);
+			$("#workNumberInfo_out").textbox('setValue',json.object.workNumber);
+			$("#userAddressInfo_out").textbox('setValue',json.object.userAddress);
+			$("#userType_out").combobox('setValue',json.object.userType);
+			$("#accountCount_out").val(json.object.accountCount);
+			$("#userState_out").combobox('setValue',json.object.userState);//更改
+			if($("#userRolesIds_out").val()==1){
+				refleshSysRole2(json.object.manageRoleArray);
+			}
+			openDialog_editDialog(json.object.departmentId,json.object.manageRoleArray);
+			
+			$('#outerPersonInfoDialog').dialog('setTitle','编辑用户'); 
+		});
+	}
+	else
+	{
+		noSelectData();
+	}
+}
+//
+function getUserDepartmentehrByDidAndLevel(inputId,departmentId,level){
+	if(!departmentId) return;
+	$.ajax({
+		async : false,
+		cache : false,
+		type : 'POST',
+		dataType : "json",
+		url : 'sys/queryUserDepartmentehr.action',// 请求的action路径
+		data:{
+			"departmentehr.departmentId" : departmentId,//
+			"departmentehr.departmentLevel" : level+''
+		},
+		success : function(data) {
+			if(data.success && data.rows.length>0){
+				parentId = data.rows[0].departmentId;
+				$('#'+inputId).textbox('setValue', data.rows[0].departmentName);
+			}
+		}
+	});
+}
+//关闭模窗
+function closeDialog(){
+	$('#portalInfoDialog').dialog('close');
+	$('#outerPersonInfoDialog').dialog('close');
+}
+function resetDialog2(){
+
+	$("#userIdInfo_out").val('');
+	$("#accountCount_out").val('');
+	$("#userNameInfo_out").textbox('setValue','');
+	$("#realNameInfo_out").textbox('setValue','');
+	$("#birthDayInfo_out").datebox('setValue','');
+	$("#mobileNumInfo_out").textbox('setValue','');
+	$("#userEmailInfo_out").textbox('setValue','');
+	$("#qqNumInfo_out").textbox('setValue','');
+	$("#workNumberInfo_out").textbox('setValue','');
+	$("#userAddressInfo_out").textbox('setValue','');
+	$("#phoneNumInfo_out").textbox('setValue','');
+	$("#userGenderInfo_out").combobox('setValue','0');
+	$('#roleIds_out').combogrid('setValue','');
+	$("#userGenderInfo_out").combobox('setValue','0');//做更改
+	$('#OutUserPassword_out').textbox('setValue','');
+	$('#OutUserPasswordQR_out').textbox('setValue','');
+	$('#userType_out').combobox('setValue','1');
+	$('#isOutUserTr').hide();
+}
+//清空控件值
+function resetDialog(){
+	$("#userIdInfo").val('');
+	$("#accountCount").val('');
+	$("#userNameInfo").textbox('setValue','');
+	$("#realNameInfo").textbox('setValue','');
+	$("#birthDayInfo").datebox('setValue','');
+	$("#mobileNumInfo").textbox('setValue','');
+	$("#userEmailInfo").textbox('setValue','');
+	$("#qqNumInfo").textbox('setValue','');
+	$("#workNumberInfo").textbox('setValue','');
+	$("#userAddressInfo").textbox('setValue','');
+	$("#phoneNumInfo").textbox('setValue','');
+	$("#userGenderInfo").combobox('setValue','0');
+	$('#roleIds').combogrid('setValue','');
+	$("#userGenderInfo").combobox('setValue','0');//做更改
+	$('#isOutUser').combobox('setValue','');
+	$('#OutUserPassword').textbox('setValue','');
+	$('#OutUserPasswordQR').textbox('setValue','');
+	var tmp = {"rows":[]};
+	$('#dataIdCombogrid').combogrid('setValue',"");
+	$('#dataIdCombogrid').combogrid('grid').datagrid('loadData',tmp.rows);
+	$("#department1").combogrid('setValue',"");
+	$('#department2').combogrid('grid').datagrid('loadData',tmp.rows);
+	$("#department2").combogrid('setValue',"");
+	$('#department3').combogrid('grid').datagrid('loadData',tmp.rows);
+	$("#department3").combogrid('setValue',"");
+	$('#department4').combogrid('grid').datagrid('loadData',tmp.rows);
+	$("#department4").combogrid('setValue',"");
+	$('#department5').combogrid('grid').datagrid('loadData',tmp.rows);
+	$("#department5").combogrid('setValue',"");
+	$('#department6').combogrid('grid').datagrid('loadData',tmp.rows);
+	$("#department6").combogrid('setValue',"");
+	
+	$("#departmentehr1").textbox('setValue',"");
+	$("#departmentehr2").textbox('setValue',"");
+	$("#departmentehr3").textbox('setValue',"");
+	$("#departmentehr4").textbox('setValue',"");
+	$("#departmentehr5").textbox('setValue',"");
+	$("#departmentehr6").textbox('setValue',"");
+}
+
+//清空右侧列表
+function resetDialogTo(){
+	$("#u_roles").html("&nbsp;");
+	$("#u_workNumber").html("&nbsp;");
+	$("#u_userGender").html("&nbsp;");
+	$("#u_birthDay").html("&nbsp;");
+	$("#u_userEmail").html("&nbsp;");
+	$("#u_phoneNum").html("&nbsp;");
+	$("#u_qqNum").html("&nbsp;");
+	$("#u_userAddress").html("&nbsp;");
+	$("#u_userCount").html("&nbsp;");
+	$("#u_lastLoginTime").html("&nbsp;");
+	$("#u_createUser").html("&nbsp;");
+	$("#u_createTime").html("&nbsp;");
+	$("#u_lastModifiedUser").html("&nbsp;");
+	$("#u_lastModifiedTime").html("&nbsp;");
+	$("#u_userName").html("&nbsp;");
+	$("#u_realName").html("&nbsp;");
+	$("#u_mobileNum").html("&nbsp;");
+	$('#u_departmentId').html("&nbsp;");
+	$('#u_dataName').html("&nbsp;");//做更改
+	$('#u_userType').html("&nbsp;");
+}
+
+//刷新表格
+function reloadTable(){
+	$('#dataGridTable').datagrid('reload');
+}
+
+//刷新
+function reloads()
+{
+	$("#userName").textbox('setValue','');
+	$("#realName").textbox('setValue','');
+	$("#workNumber").textbox('setValue','');
+	$("#search_systemCode2").combobox('setValue','');
+	$("#searchUserType").combobox('setValue','');
+	$("#searchRoleIds").combogrid('setValue','');
+	queryUser();
+	resetDialogTo();
+	userInfos();
+}
+function loadUserRoles_out(depId,roleId){
+	var dId = $('#userRolesIds_out').val();
+	if('0' == dId){
+		//window.bgidx = {treeNotLeafSelected:true};
+		$('#roleIds_out').combogrid({    
+    	    panelWidth:560,
+    	    panelHeight:250,
+    	    rownumbers:true,
+    	    pagination:true,
+    	    fitColumns:true,
+    	    pageSize:500,
+      		editable:false,
+      		toolbar:'#role_comboGrid_tools_out',
+      		multiple:true,
+      		url:'sys/findRole.action',
+    	    idField:'rolesId',    
+    	    textField:'rolesName',    
+    	    columns:[[    
+                	{field:'rolesId',title:'角色名称',width:150,hidden:'true',align:'center'},  
+                	{field:'systemName',title:'系统名称',width:150,align:'center'}, 
+                    {field:'rolesName',title:'角色名称',width:150,align:'center'},
+                    {field:'createUser',title:'记录建立者',width:createUserWidth,align:'center'},
+                    {field:'createTime',title:'记录建立时间',width:createTimeWidth,align:'center'}   
+                    ]],
+                    onLoadSuccess:function(){
+                    	$('#userRolesIds_out').val("1");
+                    	if($('#roleIds_out').combogrid('getValues').length>0){
+                    		
+                    	}else{
+                    		if(roleId != undefined){
+                    			$('#roleIds_out').combogrid('setValues',roleId);
+                    		}
+                    	}
+                    }
+    		});
+	}else{
+		if(roleId != undefined){
+		$('#roleIds_out').combogrid('setValues',roleId);
+		} else {
+			return;
+		}
+	}
+
+
+}
+function loadUserRoles(depId,roleId){
+	var dId = $('#userRolesIds').val();
+	if('0' == dId){
+		//window.bgidx = {treeNotLeafSelected:true};
+		$('#roleIds').combogrid({    
+    	    panelWidth:560,
+    	    panelHeight:250,
+    	    rownumbers:true,
+    	    pagination:true,
+    	    fitColumns:true,
+    	    pageSize:500,
+      		editable:false,
+      		toolbar:'#role_comboGrid_tools',
+      		multiple:true,
+      		url:'sys/findRole.action',
+    	    idField:'rolesId',    
+    	    textField:'rolesName',    
+    	    columns:[[    
+                	{field:'rolesId',title:'角色名称',width:150,hidden:'true',align:'center'},  
+                	{field:'systemName',title:'系统名称',width:150,align:'center'}, 
+                    {field:'rolesName',title:'角色名称',width:150,align:'center'},
+                    {field:'createUser',title:'记录建立者',width:createUserWidth,align:'center'},
+                    {field:'createTime',title:'记录建立时间',width:createTimeWidth,align:'center'}   
+                    ]],
+                    onLoadSuccess:function(){
+                    	$('#userRolesIds').val("1");
+                    	if($('#roleIds').combogrid('getValues').length>0){
+                    		
+                    	}else{
+                    		if(roleId != undefined){
+                    			$('#roleIds').combogrid('setValues',roleId);
+                    		}
+                    	}
+                    }
+    		});
+	}else{
+		if(roleId != undefined){
+		$('#roleIds').combogrid('setValues',roleId);
+		} else {
+			return;
+		}
+	}
+
+}
+
+//改变状态
+function enable(){
+	var selectedData = $('#dataGridTable').datagrid('getSelections');
+	if(selectedData.length > 0){
+		var data = selectedData[0];
+		var userId = data.userId;
+		var realName = data.realName;
+		var accountCount = data.accountCount;
+		var msg = accountCount == '1' ? "禁用":"启用";
+		$.messager.confirm('更新提示', '你确定要'+msg+'"'+realName+'"'+'用户吗？', function(r){
+			$.ajax({
+				async : false,
+				cache:false,
+				type: 'POST',
+				dataType : "json",
+				data : {
+					"user.userId" : userId,
+					"user.accountCount" :accountCount
+				},
+				url: 'sys/updateUserStatus.action',//请求的action路径
+				error: function () {//请求失败处理函数
+					sysErrorShow('请求失败!');
+				},success:function(data){
+					if(data.success==true){//未返回任何消息表示添加成功
+						sysMsgShow('操作成功!');
+						queryUser();
+					}else{//返回异常信息
+						if(data.msg='101')
+						{
+							sysMsgShow('修改状态失败!');
+						}
+					}
+				}
+			});
+		});
+	} else {
+		noSelectData();
+	}
+}
+function formatUserState(value,row){
+	var userState = row.userState;
+	return (userState=='0'?'离职':(userState=='1'?'在职':''));
+}
+function formatUserType(value,row){
+	var userType = row.userType;
+	if(userType){
+		switch (userType) {
+		case '0': return '华大员工';
+		case '1': return '外包同事';
+		case '2': return '外部用户';
+		}
+	}
+	return '';
+}
+function formatIsOutsourcing(value,row){
+	var userState = row.isOutsourcing;
+	return (userState=='0'?'是':(userState=='1'?'否':''));
+}
+function formatIsOutUser(value,row){
+	var userState = row.isOutUser;
+	return (userState=='0'?'否':(userState=='1'?'是':''));
+}
+function updateStates(value,row){
+	var accountCount = row.accountCount=='0'?'0':row.accountCount;
+	if(accountCount=='1'){
+		accountCount="<image src='../../resources/images/icons/yes.png'/>";
+	}else if(accountCount=='0'){
+		accountCount="<image src='../../resources/images/icons/stop.png'/>";
+	}else{
+		accountCount='';
+	}
+	return accountCount;
+};
+//禁用启用监听
+function doEvent(rowIndex, rowData){
+	var disableBtnFlag = false;
+	var enableBtnFlag = false;
+	var updatePasswordBtnFlag = false;
+	var editBgiUserFlag = false;
+	var editOutUserFlag = false;
+	var updatePasswordBtn = $('#updatePasswordBtn').attr("name");
+	var disableBtnName = $('#disableBtn').attr("name");
+	var enableBtnName = $('#enableBtn').attr("name");
+	var editBgiUserName = $('#editBgiUser').attr('name');
+	var editOutUserName = $('#editOutUser').attr('name');
+	//禁用启用  获得name值
+	for(var i=0;i<resource.length;i++){
+		if(resource[i].trim()==disableBtnName.trim()) {
+			disableBtnFlag = true;
+		}
+		if(resource[i].trim()==enableBtnName.trim()) {
+			enableBtnFlag = true;
+		}
+		if(resource[i].trim()==updatePasswordBtn.trim()) {
+			updatePasswordBtnFlag = true;
+		}
+		if(resource[i].trim()==editBgiUserName.trim()){
+			editBgiUserFlag = true;
+		}if(resource[i].trim()==editOutUserName.trim()){
+			editOutUserFlag = true;
+		}
+	}
+	if(1==rowData.accountCount && !disableBtnFlag){
+		$('#disableBtn').linkbutton("enable");
+		$('#enableBtn').linkbutton("disable");
+	}else{
+		$('#disableBtn').linkbutton("disable");
+	}
+	if(0==rowData.accountCount && !enableBtnFlag){
+		$('#enableBtn').linkbutton("enable");
+		$('#disableBtn').linkbutton("disable");
+	}else{
+		$('#enableBtn').linkbutton("disable");
+	}
+	//外部账号  获得name值
+	if(2==rowData.userType && !updatePasswordBtnFlag){
+		$('#updatePasswordBtn').linkbutton("enable");
+	}else{
+		$('#updatePasswordBtn').linkbutton("disable");
+	}
+	if(0==rowData.userType &&!editBgiUserFlag){
+		$('#editBgiUser').linkbutton("enable");
+		$('#editOutUser').linkbutton("disable");
+	}else if((2==rowData.userType || 1==rowData.userType) && !editOutUserFlag){
+		$('#editBgiUser').linkbutton("disable");
+		$('#editOutUser').linkbutton("enable");
+	}
+}
+
+function userFrameMod(){
+	var v = $('#userRolesIds').val();
+	if("1" == v){
+		$('#userRolesIds').val("1");
+	}else{
+		$('#userRolesIds').val("0");
+	}
+	if($('#dataGridTable').datagrid('getSelected')){
+		var userId = $('#dataGridTable').datagrid('getSelections')[0].userId;
+		$.ajax({
+			async : false,
+			cache:false,
+			type: 'POST',
+			dataType : "json",
+			url: 'sys/findUser.action',//请求的action路径
+			data : {
+				"user.userId":userId
+			},
+			success:function(data,action,opt){
+				if("" == data.object){
+					$("#u_roles").html("&nbsp;");
+				}else{
+					var str = data.object;
+					$("#u_roles").html(str.replace(/,/g,"<br/>"));
+				}
+				if(data.rows[0].workNumber != null){
+					$("#u_workNumber").text(data.rows[0].workNumber);
+				}else{
+					$("#u_workNumber").html("&nbsp;");
+				}
+				if(data.rows[0].userGender != null){
+					
+					if('0' == data.rows[0].userGender){
+						$("#u_userGender").text("未知");
+					} else if('1' == data.rows[0].userGender){
+						$("#u_userGender").text("女");
+					} else{
+						$("#u_userGender").text("男");
+					}
+				}else{
+					$("#u_userGender").html("&nbsp;");
+				}
+				if(data.rows[0].birthDay != null){
+					$("#u_birthDay").text(data.rows[0].birthDay);
+				}else{
+					$("#u_birthDay").html("&nbsp;");
+				}
+				if(data.rows[0].userEmail != null){
+					$("#u_userEmail").text(data.rows[0].userEmail);
+				}else{
+					$("#u_userEmail").html("&nbsp;");
+				}
+				if(data.rows[0].phoneNum != null){
+					$("#u_phoneNum").text(data.rows[0].phoneNum);
+				}else{
+					$("#u_phoneNum").html("&nbsp;");
+				}
+				if(data.rows[0].qqNum != null){
+					$("#u_qqNum").text(data.rows[0].qqNum);
+				}else{
+					$("#u_qqNum").html("&nbsp;");
+				}
+				if(data.rows[0].userAddress != null){
+					$("#u_userAddress").text(data.rows[0].userAddress);
+				}else{
+					$("#u_userAddress").html("&nbsp;");
+				}
+				if(data.rows[0].userCount != null){
+					$("#u_userCount").text(data.rows[0].userCount);
+				}else{
+					$("#u_userCount").html("&nbsp;");
+				}
+				if(data.rows[0].lastLoginTime != null){
+					$("#u_lastLoginTime").text(data.rows[0].lastLoginTime);
+				}else{
+					$("#u_lastLoginTime").html("&nbsp;");
+				}
+				if(data.rows[0].createTime != null){
+					$("#u_createTime").text(data.rows[0].createTime);
+				}else{
+					$("#u_createTime").html("&nbsp;");
+				}
+				if(data.rows[0].lastModifiedUser != null){
+					$("#u_lastModifiedUser").text(data.rows[0].lastModifiedUser);
+				}else{
+					$("#u_lastModifiedUser").html("&nbsp;");
+				}
+				if(data.rows[0].lastModifiedTime != null){
+					$("#u_lastModifiedTime").text(data.rows[0].lastModifiedTime);
+				}else{
+					$("#u_lastModifiedTime").html("&nbsp;");
+				}
+				if(data.rows[0].userName != null){
+					$("#u_userName").text(data.rows[0].userName);
+				}else{
+					$("#u_userName").html("&nbsp;");
+				}
+				if(data.rows[0].realName != null){
+					$("#u_realName").text(data.rows[0].realName);
+				}else{
+					$("#u_realName").html("&nbsp;");
+				}
+				if(data.rows[0].mobileNum != null){
+					$("#u_mobileNum").text(data.rows[0].mobileNum);
+				}else{
+					$("#u_mobileNum").html("&nbsp;");
+				}
+				if(data.rows[0].createUser != null){
+					$("#u_createUser").text(data.rows[0].createUser);
+				}else{
+					$("#u_createUser").html("&nbsp;");
+				}
+				if(data.rows[0].dataName != null){//做更改
+					$("#u_dataName").text(data.rows[0].dataName);
+				}else{
+					$("#u_dataName").html("&nbsp;");
+				}
+				
+				if(data.rows[0].userType){
+					if('0'==data.rows[0].userType){
+						$('#u_userType').text('华大员工');
+					}else if('1'==data.rows[0].userType){
+						$('#u_userType').text('外包同事');
+					}else if('2'==data.rows[0].userType){
+						$('#u_userType').text('外部用户');
+					}
+				}else{
+					$('#u_userType').text('&nbsp;');
+				}
+				
+/*				if(data.rows[0].isOutsourcing != null){
+					
+					if('0' == data.rows[0].isOutsourcing){
+						$("#u_isOutsourcing").text("是");
+					} else{
+						$("#u_isOutsourcing").text("否");
+					}
+				}else{
+					$("#u_isOutsourcing").html("&nbsp;");
+				}
+
+				if(data.rows[0].u_isOutUser != null){
+					if('0' == data.rows[0].isOutUser){
+						$("#u_isOutUser").text("否");
+					} else{
+						$("#u_isOutUser").text("是");
+					}
+				}else{
+					$("#u_isOutUser").html("&nbsp;");
+				}*/
+				
+				if(data.rows[0].departmentId != null){
+					$.ajax({
+						async : false,
+						cache:false,
+						type: 'POST',
+						dataType : "json",
+						data : {
+							"department.departmentId" : data.rows[0].departmentId
+						},
+						url: 'sys/queryUserDepartment.action',//请求的action路径
+						error: function () {//请求失败处理函数
+							sysErrorShow('请求失败!');
+						},success:function(data){
+							if(data.success==true){//未返回任何消息表示添加成功
+								var tmp = "";
+								var i = 0;
+								var k = 1;
+								while(true){
+									if(i == 6){
+										$("#u_departmentId").html(tmp);
+										return;
+									}else{
+										if(i>data.rows.length-1){
+											i=6;
+										}else{
+											if(data.rows[i].departmentLevel == k){
+												tmp += data.rows[i].departmentLevel+"级："+data.rows[i].departmentName+"<br/>";
+												i=0;
+												k++;
+											}else{
+												i++;
+											}
+										}
+									}
+	
+								}
+								
+							}
+						}
+					});
+					
+				}else{
+					$("#u_departmentId").html("&nbsp;");
+				}
+				
+	
+			}
+		});
+	} else {
+		noSelectData();
+	}
+}
+function userInfos(){
+	$("#userInfos").show();
+	$("#userRoleNames").hide();
+	$("#userMore").hide();
+}
+function userRoleNames(){
+	$("#userRoleNames").show();
+	$("#userInfos").hide();
+	$("#userMore").hide();
+}
+function userMore(){
+	$("#userMore").show();
+	$("#userRoleNames").hide();
+	$("#userInfos").hide();
+}
+//判断手机
+function isMobileNum(str) {
+	var re = /^(((13[0-9]{1})|(17[0-9]{1})|(15[0-9]{1})|(18[0-9]{1}))+\d{8})$/;
+	if(re.test(str)){
+		return re.test(str);
+	} else {
+		re = /^(010|021|022|023|024|025|026|027|028|029|852)\d{8}$/;
+		return re.test(str);
+	}
+}
+//判断邮箱
+function isEmail(str) {
+	var re = /^([a-zA-Z0-9]+[-|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;
+	return re.test(str);
+}
+
+//状态转换
+function areaSatuts(value,row,index){
+	var text='';
+	if(value=='0'){
+		text='<image src="resources/images/icons/stop.png"/>';
+	}
+	else if(value=='1'){
+		text='<image src="resources/images/icons/yes.png"/>';
+	}
+	return text;
+}
+ 
+

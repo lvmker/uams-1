@@ -1,0 +1,33 @@
+package com.bgi.uams.controller;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.bgi.uams.beans.UamsResponse;
+import com.bgi.uams.services.UserService;
+
+@Controller
+@RequestMapping("/user")
+public class UserController {
+    @Autowired
+    private UserService userService;
+    @RequestMapping("/createUser")
+    @ResponseBody
+    public UamsResponse execute(HttpServletRequest request,HttpServletResponse response) {
+
+	return null;
+    }
+    
+    @RequestMapping("/queryUamsUser")
+    @ResponseBody
+    public String queryUamsUser(HttpServletRequest request,HttpServletResponse response) {
+    	
+    	return "redirect:/menu.do";
+    }
+    
+}

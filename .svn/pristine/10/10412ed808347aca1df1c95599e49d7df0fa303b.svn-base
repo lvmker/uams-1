@@ -1,0 +1,41 @@
+a {
+	text-decoration: none;
+}
+
+img {
+	border: 0px;
+}
+
+.top-bar {
+	background-color: rgb(0, 157, 217);
+	height: 30px;
+	line-height: 30px;
+	vertical-align: center;
+	width: 85%;
+	color: #FFF;
+	font-size: 14px;
+}
+#count-table{
+	margin-left:70px;
+}
+
+.count-area {
+	color: #FFF;
+	margin-top: 10px;
+	margin-left: 10px;
+	width: 200px;
+	height: 65px;
+	font-size: 2px;
+	border-radius: 8px;
+}
+
+.count-title {
+	line-height: 20px;
+}
+
+.count-content {
+	text-align: right;
+	padding-right: 10px;
+	font-size: 18px;
+	margin-top: -5px;
+}

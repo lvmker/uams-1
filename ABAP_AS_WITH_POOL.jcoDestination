@@ -1,0 +1,10 @@
+#for tests only !
+#Wed Jan 17 10:44:28 CST 2018
+jco.client.lang=ZH
+jco.destination.peak_limit=10
+jco.client.client=101
+jco.client.passwd=654321
+jco.client.user=HD_TEST_JAVA
+jco.client.sysnr=00
+jco.destination.pool_capacity=3
+jco.client.ashost=192.168.20.93

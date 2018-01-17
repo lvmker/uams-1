@@ -1,0 +1,115 @@
+package com.bgi.uams.dao;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Param;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.bgi.uams.beans.Role;
+import com.bgi.uams.beans.UamsException;
+@Repository
+public class UamsRoleDao {
+        @Autowired
+	private SqlSessionTemplate sqlSessionTemplate;
+	public SqlSessionTemplate getSqlSessionTemplate() {
+	    return sqlSessionTemplate;
+	}
+	public void setSqlSessionTemplate(SqlSessionTemplate sqlSessionTemplate) {
+	    this.sqlSessionTemplate = sqlSessionTemplate;
+	}
+	/**
+	 * 根据ID更新角色信息
+	 * @param UamsRole
+	 * @throws UamsException
+	 */
+	public void updateUamsRoleByRoleId(Role uamsRole) throws UamsException{
+	    try {
+		sqlSessionTemplate.update("UamsRoleMapper.updateUamsRoleByRoleId", uamsRole);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "更新角色信息出现异常");
+	    }
+	    
+	}
+	/**
+	 * 根据ID删除角色信息
+	 * @param RoleId
+	 * @throws UamsException
+	 */
+	public void deleteUamsRoleByRoleId(String roleId) throws UamsException{
+	    try {
+		sqlSessionTemplate.delete("UamsRoleMapper.deleteUamsRoleByRoleId", roleId);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "删除角色信息出现异常");
+	    }
+	}
+	/**
+	 * 获取角色信息列表
+	 * @param UamsRole
+	 * @return
+	 * @throws UamsException
+	 */
+	public List<Role> getUamsRoles(Role uamsRole) throws UamsException{
+	    try {
+		return sqlSessionTemplate.selectList("UamsRoleMapper.getUamsRoles", uamsRole);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "获取角色信息出现异常");
+	    }
+	    
+	}
+	/**
+	 * 统计角色信息总数出现异常
+	 * @param UamsRole
+	 * @return
+	 * @throws UamsException
+	 */
+	public Integer getUamsRolesCount(Role uamsRole) throws UamsException{
+	    try {
+		return sqlSessionTemplate.selectOne("UamsRoleMapper.getUamsRolesCount", uamsRole);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "统计角色信息总数出现异常");
+	    }
+	}
+	/**
+	 * 新增角色信息出现异常
+	 * @param UamsRole
+	 * @throws UamsException
+	 */
+	public void createUamsRole(Role uamsRole) throws UamsException{
+	    try {
+		sqlSessionTemplate.insert("UamsRoleMapper.createUamsRole", uamsRole);
+	    } catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "新增角色信息出现异常");
+	    }  
+	}
+	/**
+	 * 保存角色和菜单资源授权信息
+	 * @param uamsUser
+	 * @throws UamsException
+	 */
+	public void saveUamsRoleAndResource(@Param("roleId") Long roleId, @Param("resourceId") Long resourceId) throws UamsException{
+		try {
+		Map<Long,Long> map = new HashMap<Long,Long>();
+	    map.put(roleId, resourceId);
+		sqlSessionTemplate.insert("UamsRoleMapper.saveUamsRoleAndResource", map);
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+			throw new UamsException(UamsException.ERROR_CODE.ILLEGAL, "保存角色和菜单资源授权信息出现异常");
+		}  
+	}
+	
+}

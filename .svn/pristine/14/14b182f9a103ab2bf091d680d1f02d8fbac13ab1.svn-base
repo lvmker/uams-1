@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="UamsRoleMapper">
+	<resultMap id="RoleBaseResultMap" type="com.bgi.uams.beans.Role">
+		<id column="role_id" property="roleId" jdbcType="VARCHAR" />
+		<result column="role_name" property="roleName" jdbcType="VARCHAR" />
+		<result column="last_modified_user" property="lastModifiedUser" jdbcType="VARCHAR" />
+		<result column="last_modified_time" property="lastModifiedTime" jdbcType="VARCHAR" />
+		<result column="system_code" property="systemCode" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<sql id="pageStart">
+		<if test="startIndex != null" >
+		<![CDATA[   select * from (select row_.*, rownum rownum_ from (    ]]>  
+		</if>
+	</sql>  
+	<sql id="pageEnd">
+		<if test="startIndex != null" >
+		<![CDATA[   )row_ where rownum<=#endIndex# ) where rownum_>=#startIndex#  ]]>
+		</if>  
+	</sql>  
+	<!--角色过滤条件-->
+	<sql id="uamsRolesFilter">
+		<where>
+			<if test="roleId != null" >
+			    and role_id = #{roleId}
+			</if>
+			<if test="roleName != null" >
+			    and role_name = #{roleName}
+			</if>
+			<if test="systemCode != null" >
+			    and system_code = #{systemCode}
+			</if>
+	 </where>
+	</sql>  
+	<!--根据ID修改角色-->
+	<update id="updateUamsRoleByRoleId" parameterType="UamsRole">
+		update SYS_ROLE 
+		<set>
+			<if test="roleName != null">role_name=#{roleName},</if>
+			<if test="systemCode != null">system_code=#{systemCode},</if>
+			<if test="lastModifiedUser != null">last_modified_user=#{lastModifiedUser},</if>
+			<if test="lastModifiedTime != null">last_modified_time=#{lastModifiedTime},</if>	
+		</set>
+		where role_id=#{roleId}
+	</update>
+	<!--根据ID删除角色-->
+	<delete id="deleteUamsRoleByRoleId" parameterType="string">
+		delete from SYS_ROLE where role_id=#{roleId}
+	</delete>
+	<!--获取角色总数（用以查询角色是否存在）-->
+	<select id="getUamsRolesCount" resultType="java.lang.Integer" parameterType="UamsRole" >  
+		select   count(1) from SYS_ROLE
+		<include refid="uamsRolesFilter"/>
+	</select> 
+	<!--获取角色-->
+	<select id="getUamsRoles" parameterType="UamsRole" resultMap="RoleBaseResultMap">
+		<include refid="pageStart"/>
+		select   role_id,role_name,system_code,last_modified_user,last_modified_time 
+		from SYS_ROLE
+		<include refid="uamsRolesFilter"/>
+		<include refid="pageEnd"/>
+	</select>
+	<!--新增角色-->
+	<insert id="createUamsRole" parameterType="UamsRole" >
+   		INSERT INTO SYS_ROLE
+			<trim prefix="(" suffix=")" suffixOverrides=",">
+				<if test="roleId != null">role_id,</if>
+				<if test="roleName != null">role_name,</if>
+				<if test="systemCode != null">system_code,</if>
+				<if test="lastModifiedUser != null">last_modified_user,</if>
+				<if test="lastModifiedTime != null">last_modified_time,</if>
+			</trim>
+			<trim prefix="values (" suffix=")" suffixOverrides=",">
+				<if test="roleId != null">#{roleId},</if>
+				<if test="roleName != null">#{roleName},</if>
+				<if test="systemCode != null">#{systemCode},</if>
+				<if test="lastModifiedUser != null">#{lastModifiedUser},</if>
+				<if test="lastModifiedTime != null">#{lastModifiedTime},</if>
+			</trim>
+   	</insert>
+   	<!--保存角色和菜单授权信息-->
+	<insert id="saveUamsRoleAndResource" parameterType="Object">
+   		INSERT INTO SYS_ROLE_MENU
+   		 (role_id,resource_id)
+    	VALUES (#{roleId}, #{resourceId}
+   	</insert>
+</mapper>

@@ -1,0 +1,193 @@
+$(document).ready(function(){
+	setDialog();
+	closeDialog();
+	//初始化表格
+	$('#dataGridTable').datagrid({
+		columns:[[ 
+           {field:'dataName',title:'数据名称',width:250,align:'center'}, 
+           {field:'systemName',title:'系统名称',width:100,align:'center'},
+           {field:'systemCode',title:'系统编码',width:100,align:'center'}, 
+           {field:'lastModifiedUser',title:'记录最后修改者',width:lastModifiedWidth,align:'center'},
+           {field:'lastModifiedTime',title:'记录最后修改时间',width:createTimeWidth,align:'center'}
+         ]]
+	});	
+	$('#rolesName').textbox('textbox').keydown(function (e) {
+	   if (e.keyCode == 13) {
+		   $('#rolesName').textbox('setValue', $(this).val());
+		   queryRole();
+	    }
+	});
+	$('#roleInfoDialog_sysNameFilt').combobox({
+	    onSelect : function(rec){
+	    	queryRole();
+	    }
+	 });
+});
+
+//面板配置窗口关闭标志
+var portalCloseFlag = false;
+
+//保存数据信息
+function saveData(){
+	var dataId=$("#dataInfoDialog_dataId").val();
+	var dataName=$("#dataInfoDialog_dataName").val();
+	var systemCode=$("#dataInfoDialog_sysName").combobox('getValue');
+	if(dataName==null||dataName==''){
+		sysMsgShow("用户名称不允许为空!");
+		return false;
+	}else{
+		$.ajax({
+			async : false,
+			cache:false,
+			type: 'post',
+			dataType : "json",
+			data : {
+				"data.dataId" : dataId,
+				"data.systemCode" : systemCode,
+				"data.dataName" : dataName
+			},
+			url: 'sys/saveUamsData.action',//请求的action路径
+			error: function () {
+				sysErrorShow('请求失败!');
+			},success:function(data){
+				var messgage = dataId?"修改成功!":"添加成功!";
+				if(data.success==true){
+					reloadTable();
+					closeDialog();
+				}else{
+					messgage = data.msg;
+				}
+				sysMsgShow(messgage);
+			}
+		});
+	
+	}	
+}
+
+//删除系统
+function delData(){
+	if($('#dataGridTable').datagrid('getSelected')){
+		var ids = [];
+		var cods = [];
+		var selectedRow = $('#dataGridTable').datagrid('getSelections');
+		for(var i=0;i<selectedRow.length;i++){
+			ids.push(selectedRow[i].rolesId);
+			cods.push(selectedRow[i].rolesName);
+		}
+		var dataId = ids.join(',');
+		$.messager.confirm('删除提示', '   删除角色后，它对应的用户、菜单、资源、面板的关系都将删除，你确定删除下列角色吗?<br/><center>'+cods.join(',')+'</center>', function(r){
+				if (r){
+					var url = 'sys/deleteUamsData.action?data.dataId='+dataId;
+					$.ajax({
+						async : false,
+						cache:false,
+						type: 'post',
+						dataType : "json",
+						url:url,
+						error: function () {
+							sysErrorShow('请求失败');
+						},success:function(data){
+							if(data.success==true){
+								sysMsgShow("删除成功!");
+							}else{
+								sysErrorShow(data.msg);
+							}
+							reloadTable();
+						}
+					});
+				}
+		});
+	}
+	else
+	{
+		noSelectData();
+	}
+}
+
+//查询系统
+function queryRole(){
+	$("#dataGridTable").datagrid('reload',{		
+		'data.dataName' : $("#dataName").val(),
+		'data.systemCode' : $("#roleInfoDialog_sysNameFilt").combobox("getValue")
+	 	
+	}); 
+}
+
+/**--------------操作弹出框------------------**/
+//初始化模窗
+function setDialog(){
+	$('#dataInfoDialog').dialog({
+		modal: true,
+		collapsible : true,
+		resizable : true,
+		onClose : function(){
+			resetDialog();
+		}
+	});
+}
+
+//打开添加或修改模窗
+function openDialog_add(){ 
+	$('#dataInfoDialog').dialog({
+		closed: false,
+		modal:true,
+        title: "新增数据",
+        buttons: [{
+            text: '确定',
+            iconCls: 'icon-ok',
+            handler: saveData
+        }, {
+            text: '取消',
+            iconCls: 'icon-cancel',
+            handler: function () {
+                $('#dataInfoDialog').dialog('close');                    
+            }
+        }]
+    });
+}
+
+//打开编辑模窗
+function openDialog_edit(){
+	if($('#dataGridTable').datagrid('getSelected')){
+		var rolesId = $('#dataGridTable').datagrid('getSelections')[0].dataId;
+		$.getJSON("sys/findUamsDataById.action?data.dataId="+dataId,null,
+		function msg(json){
+			openDialog_add();
+			$("#roleInfoDialog_roleId").val(dataId);
+			$("#roleInfoDialog_roleName").textbox('setValue',json.object.dataName);
+			$("#roleInfoDialog_sysName").combobox('setValue',json.object.systemCode);
+			$('#roleInfoDialog').dialog('setTitle','编辑数据'); 
+		});
+	}
+	else
+	{
+		noSelectData();
+	}
+}
+
+
+/**--------------操作弹出框------------------**/
+//关闭模窗
+function closeDialog(){
+	$('#dataInfoDialog').dialog('close');
+}
+
+//清空控件值
+function resetDialog(){
+	$("#dataInfoDialog_roleId").val('');
+	$("#dataInfoDialog_roleName").textbox('setValue','');
+	$("#dataInfoDialog_sysName").combobox('setValue','');
+}
+
+//刷新表格
+function reloadTable(){
+	$('#dataGridTable').datagrid('reload');
+}
+
+//刷新
+function reloadData()
+{
+	$("#dataName").textbox('setValue','');
+	$("#dataInfoDialog_sysNameFilt").combobox('setValue','');
+	queryData();
+}

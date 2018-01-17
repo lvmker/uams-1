@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="UamsDataMapper">
+	<resultMap id="DataBaseResultMap" type="com.bgi.uams.beans.Data">
+		<id column="data_id" property="dataId" jdbcType="VARCHAR" />
+		<result column="data_type" property="dataType" jdbcType="VARCHAR" />
+		<result column="field" property="field" jdbcType="VARCHAR" />
+		<result column="sign" property="sign" jdbcType="VARCHAR" />
+		<result column="option" property="option" jdbcType="VARCHAR" />
+		<result column="low" property="low" jdbcType="VARCHAR" />
+		<result column="high" property="high" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<sql id="pageStart">
+		<if test="startIndex != null" >
+		<![CDATA[   select * from (select row_.*, rownum rownum_ from (    ]]>  
+		</if>
+	</sql>  
+	<sql id="pageEnd">
+		<if test="startIndex != null" >
+		<![CDATA[   )row_ where rownum<=#endIndex# ) where rownum_>=#startIndex#  ]]>
+		</if>  
+	</sql>  
+	<!--数据过滤条件-->
+	<sql id="uamsDatasFilter">
+		<where>
+			<if test="dataId != null" >
+			    and data_id = #{dataId}
+			</if>
+			<if test="dataType != null" >
+			    and data_type = #{dataType}
+			</if>
+			<if test="field != null" >
+			    and field = #{field}
+			</if>
+			<if test="sign != null" >
+			    and sign = #{sign}
+			</if>
+			<if test="option != null" >
+			    and option = #{option}
+			</if>
+			<if test="low != null" >
+			    and low = #{low}
+			</if>
+			<if test="high != null" >
+			    and high = #{high}
+			</if>
+	 </where>
+	</sql>  
+	<!--根据ID修改数据-->
+	<update id="updateUamsDataByDataId" parameterType="UamsData">
+		update SYS_DATA 
+		<set>
+			<if test="dataType != null">data_type=#{dataType},</if>
+			<if test="field != null">field=#{field},</if>
+			<if test="sign != null">sign=#{sign},</if>
+			<if test="option != null">option=#{option},</if>
+			<if test="low != null">low=#{low},</if>
+			<if test="high != null">high=#{high},</if>
+		</set>
+		where data_id=#{dataId}
+	</update>
+	<!--根据ID删除数据-->
+	<delete id="deleteUamsDataByDataId" parameterType="string">
+		delete from SYS_DATA where data_id=#{DataId}
+	</delete>
+	<!--获取数据总数（用以查询数据是否存在）-->
+	<select id="getUamsDatasCount" resultType="java.lang.Integer" parameterType="UamsData" >  
+		select   count(1) from SYS_DATA
+		<include refid="uamsDatasFilter"/>
+	</select> 
+	<!--获取数据-->
+	<select id="getUamsDatas" parameterType="UamsData" resultMap="DataBaseResultMap">
+		<include refid="pageStart"/>
+		select   data_id,data_type,field,sign,option,low,high 
+		from SYS_DATA
+		<include refid="uamsDatasFilter"/>
+		<include refid="pageEnd"/>
+	</select>
+	<!--新增数据-->
+	<insert id="createUamsData" parameterType="UamsData" >
+   		INSERT INTO SYS_DATA
+			<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="dataType != null">data_type,</if>
+			<if test="field != null">field,</if>
+			<if test="sign != null">sign,</if>
+			<if test="option != null">option,</if>
+			<if test="low != null">low,</if>
+			<if test="high != null">high,</if>
+			<if test="dataId != null">data_id,</if>	
+			</trim>
+			<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="dataType != null">#{dataType},</if>
+			<if test="field != null">#{field},</if>
+			<if test="sign != null">#{sign},</if>
+			<if test="option != null">#{option},</if>
+			<if test="low != null">#{low},</if>
+			<if test="high != null">#{high},</if>
+			<if test="dataId != null">#{DataId},</if>	
+			</trim>
+   	</insert>
+	
+</mapper>
